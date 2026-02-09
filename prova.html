@@ -45,7 +45,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
 .turno-card-d { border-top-color: #ef4444; }
 .turno-header { padding: 1.5rem; background: linear-gradient(135deg, rgba(0,0,0,.02), rgba(0,0,0,.05)); border-bottom: 1px solid var(--gray-200); }
 .turno-title { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-.turno-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; }
+.turno-stats { width: 100%; }
 .stat-badge { background: var(--gray-100); padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; }
 .stat-badge-label { color: var(--gray-600); font-size: 0.75rem; margin-bottom: 0.25rem; }
 .stat-badge-value { font-size: 1.25rem; font-weight: 700; }
@@ -955,24 +955,40 @@ function renderTurnoCard(turno, state) {
     const colors = {A: 'a', B: 'b', C: 'c', D: 'd'};
     const titles = {A: 'Turno A', B: 'Turno B', C: 'Turno C', D: 'Turno D'};
     const icons = {A: '🔵', B: '🟢', C: '🟡', D: '🔴'};
-    
+
+    // Tabella riepilogo: righe = operazioni, colonne = progetti
+    const ops = ['OP10', 'End Soft', 'End Hard'];
+    const progetti = ['DCT 300', '8Fe', 'DCT Eco'];
+    const pColors = {'DCT 300': '#3b82f6', '8Fe': '#10b981', 'DCT Eco': '#f59e0b'};
+    const getVal = (prog, op) => f.filter(x => x.Progetto === prog && (x.CentroDiLavoro || '').toLowerCase().includes(op.toLowerCase())).reduce((s, x) => s + x.QuantitaTotale, 0);
+    const totProg = (prog) => f.filter(x => x.Progetto === prog).reduce((s, x) => s + x.QuantitaTotale, 0);
+    let statsHTML = `<table style="width:100%;border-collapse:collapse;font-size:1.05rem;margin-top:10px;">` +
+        `<thead><tr><td style="padding:8px 10px;"></td>` +
+        progetti.map(p => `<th style="padding:8px 12px;text-align:center;font-size:1.1rem;color:${pColors[p]};font-weight:700;border-bottom:3px solid ${pColors[p]};">${p}</th>`).join('') +
+        `</tr></thead><tbody>` +
+        ops.map(op => `<tr><td style="padding:8px 10px;font-weight:600;font-size:1rem;color:var(--gray-700);">${op}</td>` +
+            progetti.map(p => {
+                const v = getVal(p, op);
+                return `<td style="padding:8px 12px;text-align:center;font-size:1.15rem;font-weight:${v > 0 ? '700' : 'normal'};color:${v > 0 ? 'var(--gray-900)' : '#ccc'};">${v > 0 ? formatNum(v) : '-'}</td>`;
+            }).join('') + `</tr>`).join('') +
+        `<tr style="border-top:3px solid var(--gray-300);"><td style="padding:8px 10px;font-weight:700;font-size:1rem;">Totale</td>` +
+        progetti.map(p => {
+            const t = totProg(p);
+            return `<td style="padding:8px 12px;text-align:center;font-size:1.2rem;font-weight:700;color:${pColors[p]};">${t > 0 ? formatNum(t) : '-'}</td>`;
+        }).join('') + `</tr>` +
+        `</tbody></table>`;
+
     const card = document.createElement('div');
     card.className = 'turno-card turno-card-' + colors[turno];
-    // Elenco macchine fornito
     const macchine = [
         "DRA10060","DRA10061","DRA10062","DRA10063","DRA10064","DRA10065","DRA10066","DRA10067","DRA10068","DRA10069","DRA10070","DRA10071","DRA10072","DRA11042","FRW10077","FRW10193","FRW10217","FRW10076","FRW10078","FRW12464","FRW10074","FRW10075","FRW10082","FRW10140","FRW10079","FRW11980","FRW10081","FRW11010","FRW11022","FRW11016","FRW11017","EGW11005","EGW11008","EGW11014","EGW11015","EGW11016","SCA11008","SCA11009","SCA11010","SCA10151","SCA11006","MZA11005","MZA11006","MZA11008","STW11002","STW11007","STW19069","STW12177","FRD 19013","FRD 19060","ORE19068","TLS 11005","ZSA11019","ZSA11022","RAA11009","TLS 11005","FRA11023","FRA11025","DRA10110","DRA10111","DRA10116","DRA10106","DRA10102","DRA10108","DRA10099","DRA10100","DRA19009","DRA10097","DRA10098","DRA10101","DRA10107","DRA11016","DRA10113","DRA10114","DRA10109","SLW11011","SLW11012","SLW11046","SLW11126","SLW11044","SLW11009","SLW11010","SLW11017","SLW11014","SLW11027","SLW11026","SLW11028","SLW11013","SLW11048","HNW16040","SLA11083","SLA11084","SLA11085","SLA11086","SLA11087","SLA11088","SLA11089","SLA11090","SLA11091","SLA11092","SLA11108","SLA11109","SLA11110","SCA10078","ORE11032","TLS 11013","DRA10058","DRA10059","DRA11044","FRW10189","FRW10073","FRW11015","EGW11006","EGW11007","BOA394","DRA10096","DRA10190","DRA11837","SLW11018","SLW11019","SLW11029","DRA11130","DRA11131","DRA11132","DRA11133","ORE11103","MON12551","SCA11051","TSL11015"
     ];
-    card.innerHTML = `<div class="turno-header"><div class="turno-title" style="color: ${turno==='A'?'#1e40af':turno==='B'?'#065f46':turno==='C'?'#92400e':'#7f1d1d'};"><span>${icons[turno]}</span> ${titles[turno]}</div><div class="turno-stats"><div class="stat-badge"><div class="stat-badge-label">Quantità</div><div class="stat-badge-value">${formatNum(tot)}</div></div></div></div><div class="turno-content">` + (f.length === 0 ? '<div class="empty-message">Nessun dato</div>' : `<table class="items-table"><thead><tr><th>M/C</th><th>Progetto</th><th>Componente</th><th>Materiale</th><th>Lavorazione</th><th>Prod/Target</th></tr></thead><tbody>` + f.map((item, idx) => {
-        // Elenco macchine fornito
-        const macchine = [
-            "DRA10060","DRA10061","DRA10062","DRA10063","DRA10064","DRA10065","DRA10066","DRA10067","DRA10068","DRA10069","DRA10070","DRA10071","DRA10072","DRA11042","FRW10077","FRW10193","FRW10217","FRW10076","FRW10078","FRW12464","FRW10074","FRW10075","FRW10082","FRW10140","FRW10079","FRW11980","FRW10081","FRW11010","FRW11022","FRW11016","FRW11017","EGW11005","EGW11008","EGW11014","EGW11015","EGW11016","SCA11008","SCA11009","SCA11010","SCA10151","SCA11006","MZA11005","MZA11006","MZA11008","STW11002","STW11007","STW19069","STW12177","FRD 19013","FRD 19060","ORE19068","TLS 11005","ZSA11019","ZSA11022","RAA11009","TLS 11005","FRA11023","FRA11025","DRA10110","DRA10111","DRA10116","DRA10106","DRA10102","DRA10108","DRA10099","DRA10100","DRA19009","DRA10097","DRA10098","DRA10101","DRA10107","DRA11016","DRA10113","DRA10114","DRA10109","SLW11011","SLW11012","SLW11046","SLW11126","SLW11044","SLW11009","SLW11010","SLW11017","SLW11014","SLW11027","SLW11026","SLW11028","SLW11013","SLW11048","HNW16040","SLA11083","SLA11084","SLA11085","SLA11086","SLA11087","SLA11088","SLA11089","SLA11090","SLA11091","SLA11092","SLA11108","SLA11109","SLA11110","SCA10078","ORE11032","TLS 11013","DRA10058","DRA10059","DRA11044","FRW10189","FRW10073","FRW11015","EGW11006","EGW11007","BOA394","DRA10096","DRA10190","DRA11837","SLW11018","SLW11019","SLW11029","DRA11130","DRA11131","DRA11132","DRA11133","ORE11103","MON12551","SCA11051","TSL11015"
-        ];
+    card.innerHTML = `<div class="turno-header"><div class="turno-title" style="color: ${turno==='A'?'#1e40af':turno==='B'?'#065f46':turno==='C'?'#92400e':'#7f1d1d'};"><span>${icons[turno]}</span> ${titles[turno]}</div><div class="turno-stats">${statsHTML}</div></div><div class="turno-content">` + (f.length === 0 ? '<div class="empty-message">Nessun dato</div>' : `<table class="items-table"><thead><tr><th>M/C</th><th>Progetto</th><th>Componente</th><th>Materiale</th><th>Lavorazione</th><th>Prod/Target</th></tr></thead><tbody>` + f.map((item, idx) => {
         const tg = TARGETS[item.Progetto] || 0, tt = Math.round(tg / 4), ok = item.QuantitaTotale >= tt;
-        // Associa la macchina in base all'indice della riga, ciclando se necessario
         const macchina = macchine[idx % macchine.length];
         return `<tr><td>${macchina}</td><td class="item-progetto">${item.Progetto}</td><td class="item-componente">${item.Componente}</td><td class="item-material">${item.Materiale}</td><td>${item.CentroDiLavoro}</td><td class="item-qty ${ok ? 'qty-ok' : 'qty-fail'}">${ok ? '<span class="check-mark">✓</span>' : '<span class="x-mark">✕</span>'} ${formatNum(item.QuantitaTotale)}/${tt}</td></tr>`;
     }).join('') + `</tbody></table>`) + `</div>`;
-    
+
     return card;
 }
 
@@ -1126,7 +1142,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const workbook = XLSX.read(ev.target.result, {type: 'binary'});
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(sheet, {defval: ''});
+                    // Debug: mostra struttura del foglio per trovare la riga di partenza dei dati
+                    const ref = sheet['!ref'] || 'N/A';
+                    let dbgRows = '';
+                    for (let r = 1; r <= 15; r++) {
+                        const cells = ['A','B','C','D','E','F','G'].map(c => {
+                            const cell = sheet[c + r];
+                            return cell ? String(cell.v).substring(0, 20) : '';
+                        });
+                        dbgRows += `Riga ${r}: ${cells.join(' | ')}\n`;
+                    }
+                    alert(`DEBUG STRUTTURA EXCEL\nRange: ${ref}\n\n${dbgRows}`);
+                    // Trova la riga header cercando "Materiale" nelle prime 20 righe
+                    let headerRow = 0;
+                    for (let r = 1; r <= 20; r++) {
+                        for (const c of ['A','B','C','D','E','F','G','H','I','J']) {
+                            const cell = sheet[c + r];
+                            if (cell && String(cell.v).toLowerCase().includes('materiale')) {
+                                headerRow = r - 1; // sheet_to_json usa indice 0-based
+                                break;
+                            }
+                        }
+                        if (headerRow > 0) break;
+                    }
+                    const json = XLSX.utils.sheet_to_json(sheet, {defval: '', range: headerRow});
                     DATA.length = 0;
                     let n = 0;
                     // Leggi data dalla cella D9
